@@ -37,6 +37,7 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
+  overflow-x: hidden;
 }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
 input, select { font-family: inherit; }
@@ -251,6 +252,8 @@ a { color: inherit; text-decoration: none; }
 .qty-btn.plus  { background: var(--success); }
 .qty-input {
   flex: 1;
+  width: 100%;
+  min-width: 0;
   text-align: center;
   font-size: 24px;
   font-weight: 700;
@@ -261,9 +264,12 @@ a { color: inherit; text-decoration: none; }
   background: var(--bg);
   outline: none;
   -moz-appearance: textfield;
-  transition: border-color var(--transition);
+  transition: border-color var(--transition), box-shadow var(--transition);
 }
-.qty-input:focus { border-color: var(--success); }
+.qty-input:focus { 
+  border-color: var(--success);
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+}
 .qty-input::-webkit-outer-spin-button,
 .qty-input::-webkit-inner-spin-button { -webkit-appearance: none; }
 
