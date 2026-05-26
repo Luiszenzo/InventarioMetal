@@ -1,0 +1,16 @@
+{
+  "name": "inventario-restaurante",
+  "version": "1.0.0",
+  "description": "PWA de inventario para restaurante - Cocina y Barra",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1",
+    "express": "^4.22.2",
+    "firebase": "^12.13.0",
+    "firebase-admin": "^12.7.0"
+  }
+}

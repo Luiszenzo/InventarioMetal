@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#F97316" />
+  <meta name="description" content="Inicia sesión en el sistema de inventario del restaurante" />
+  <title>Login — Inventario</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <div class="login-logo">🍽️</div>
+      <h1 class="login-app-name">Inventario</h1>
+      <p class="login-sub">Sistema de inventario del restaurante</p>
+
+      <div id="login-error" class="login-error"></div>
+
+      <form class="login-form" id="login-form">
+        <label class="form-label">Correo electrónico
+          <input class="form-input" id="login-email" type="email" placeholder="correo@restaurante.com"
+            autocomplete="email" required />
+        </label>
+        <label class="form-label">Contraseña
+          <input class="form-input" id="login-pass" type="password" placeholder="••••••••"
+            autocomplete="current-password" required />
+        </label>
+        <button class="login-btn" id="login-btn" type="submit">Iniciar sesión</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module">
+    import { login, onAuth } from '/js/auth.js';
+
+    // Already logged in? Redirect
+    onAuth(user => {
+      if (user) window.location.href = '/';
+    });
+
+    document.getElementById('login-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      const errEl = document.getElementById('login-error');
+      errEl.classList.remove('show');
+      btn.disabled = true;
+      btn.textContent = 'Entrando...';
+
+      try {
+        await login(
+          document.getElementById('login-email').value.trim(),
+          document.getElementById('login-pass').value
+        );
+        window.location.href = '/';
+      } catch (err) {
+        const msgs = {
+          'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+          'auth/user-not-found': 'Usuario no encontrado.',
+          'auth/wrong-password': 'Contraseña incorrecta.',
+          'auth/too-many-requests': 'Demasiados intentos. Intenta más tarde.'
+        };
+        errEl.textContent = msgs[err.code] || 'Error al iniciar sesión.';
+        errEl.classList.add('show');
+        btn.disabled = false;
+        btn.textContent = 'Iniciar sesión';
+      }
+    });
+
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  </script>
+</body>
+</html>

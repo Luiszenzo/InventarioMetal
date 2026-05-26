@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#F97316" />
+  <meta name="description" content="Sistema de inventario para Cocina y Barra del restaurante" />
+  <title>Inventario Restaurante</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="icon" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/css/styles.css" />
+
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.3/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+<div id="app">
+  <!-- ===== HEADER ===== -->
+  <header class="app-header" id="inv-header">
+    <div class="header-left">
+      <button class="btn-back" id="header-back" onclick="goBack()" style="display:none" title="Volver">←</button>
+      <span class="header-title" id="inv-title">Inventario</span>
+    </div>
+    <div class="header-right">
+      <span class="header-user" id="header-user"></span>
+      <div id="menu-admin" style="display:none">
+        <button class="btn-admin" onclick="openAdmin('reports')">⚙️ Admin</button>
+      </div>
+      <button class="btn-logout" onclick="doLogout()">Salir</button>
+    </div>
+  </header>
+
+  <!-- ===== VIEW: SELECTOR ===== -->
+  <section class="view" id="view-selector">
+    <p class="selector-title">¿Qué inventario vas a hacer?</p>
+    <p class="selector-sub">Selecciona la sección</p>
+    <div class="selector-cards">
+      <button class="selector-card cocina" onclick="selectSection('cocina')" id="btn-cocina">
+        <span class="selector-card-icon">🍳</span>
+        <div class="selector-card-info">
+          <span class="selector-card-label">Cocina</span>
+          <span class="selector-card-desc">Ingredientes y utensilios de cocina</span>
+        </div>
+        <span class="selector-card-arrow">›</span>
+      </button>
+
+      <button class="selector-card barra" onclick="selectSection('barra')" id="btn-barra">
+        <span class="selector-card-icon">🍹</span>
+        <div class="selector-card-info">
+          <span class="selector-card-label">Barra</span>
+          <span class="selector-card-desc">Bebidas, licores y mixers</span>
+        </div>
+        <span class="selector-card-arrow">›</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: INVENTORY ===== -->
+  <section class="view" id="view-inventory">
+    <div class="inv-loading" id="inv-loading" style="display:none">
+      <div class="loading-spinner"></div>
+    </div>
+    <div class="inv-content">
+      <div id="inv-list"></div>
+    </div>
+
+    <!-- FAB: Add product -->
+    <button class="fab" id="inv-fab" onclick="openAddProduct()" title="Agregar producto">+</button>
+
+    <!-- Submit report button -->
+    <button class="btn-submit" id="inv-submit-btn" onclick="doSubmitReport()">
+      📤 Enviar Reporte del Día
+    </button>
+  </section>
+
+  <!-- ===== VIEW: ADMIN ===== -->
+  <section class="view" id="view-admin">
+    <div class="admin-content">
+      <!-- Tabs -->
+      <div class="admin-tabs">
+        <button class="admin-tab-btn active" id="tab-btn-reports" onclick="switchAdminTab('reports')">📄 Reportes</button>
+        <button class="admin-tab-btn" id="tab-btn-users" onclick="switchAdminTab('users')">👥 Usuarios</button>
+      </div>
+
+      <!-- Reports panel -->
+      <div class="admin-tab-panel active" id="tab-reports">
+        <div class="filter-row">
+          <button class="filter-btn active" onclick="filterReports('all')">Todos</button>
+          <button class="filter-btn" onclick="filterReports('cocina')">🍳 Cocina</button>
+          <button class="filter-btn" onclick="filterReports('barra')">🍹 Barra</button>
+        </div>
+        <div id="reports-list"></div>
+      </div>
+
+      <!-- Users panel -->
+      <div class="admin-tab-panel" id="tab-users">
+        <button class="admin-add-btn" onclick="openNewUser()">+ Nuevo empleado</button>
+        <div id="users-list"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ===== MODAL ===== -->
+<div id="modal-overlay">
+  <div id="modal-content">
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ===== TOASTS ===== -->
+<div id="toast-container"></div>
+
+<script>
+  // Show/hide back button based on active view
+  const backBtn = document.getElementById('header-back');
+  const observer = new MutationObserver(() => {
+    const onSelector = document.getElementById('view-selector').classList.contains('active');
+    backBtn.style.display = onSelector ? 'none' : 'flex';
+  });
+  observer.observe(document.getElementById('app'), { subtree: true, attributes: true, attributeFilter: ['class'] });
+</script>
+
+<script type="module" src="/js/ui.js"></script>
+<script type="module" src="/js/app.js"></script>
+</body>
+</html>
