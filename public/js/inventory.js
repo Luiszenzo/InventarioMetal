@@ -397,7 +397,6 @@ export async function submitReport(user) {
     minimo:      p.minimo,
     esFaltante:  (quantities[p.id] ?? 0) < p.minimo
   }));
-
   try {
     await generateAndSaveReport({
       seccion:       currentSection,
@@ -406,11 +405,6 @@ export async function submitReport(user) {
       totalFaltantes: faltantes.length
     });
     showToast('¡Reporte enviado! 📄', 'success');
-
-    // Resetear borrador en Firestore
-    const resetQty = {};
-    products.forEach(p => { resetQty[p.id] = 0; });
-    await setDoc(draftRef(), { quantities: resetQty, updatedAt: serverTimestamp() });
   } catch (e) {
     showToast('Error al enviar reporte: ' + e.message, 'error');
   }
