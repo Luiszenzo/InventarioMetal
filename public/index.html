@@ -55,6 +55,15 @@
         </div>
         <span class="selector-card-arrow">›</span>
       </button>
+
+      <button class="selector-card tienda" onclick="selectSection('tienda')" id="btn-tienda">
+        <span class="selector-card-icon">👕</span>
+        <div class="selector-card-info">
+          <span class="selector-card-label">Tienda</span>
+          <span class="selector-card-desc">Prendas de ropa y artículos de la tienda</span>
+        </div>
+        <span class="selector-card-arrow">›</span>
+      </button>
     </div>
   </section>
 
@@ -91,6 +100,7 @@
           <button class="filter-btn active" onclick="filterReports('all')">Todos</button>
           <button class="filter-btn" onclick="filterReports('cocina')">🍳 Cocina</button>
           <button class="filter-btn" onclick="filterReports('barra')">🍹 Barra</button>
+          <button class="filter-btn" onclick="filterReports('tienda')">👕 Tienda</button>
         </div>
         <div id="reports-list"></div>
       </div>

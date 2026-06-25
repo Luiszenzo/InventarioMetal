@@ -44,7 +44,12 @@ window.selectSection = function(section) {
   initInventory(section, currentUserData);
 
   // Update back-btn and title accent
-  const color = section === 'cocina' ? '#F97316' : '#3B82F6';
+  let color = '#8B5CF6';
+  if (section === 'cocina') {
+    color = '#F97316';
+  } else if (section === 'barra') {
+    color = '#3B82F6';
+  }
   document.getElementById('inv-header').style.setProperty('--accent', color);
 };
 

@@ -8,6 +8,9 @@
   --barra: #3B82F6;
   --barra-dark: #2563EB;
   --barra-light: #EFF6FF;
+  --tienda: #8B5CF6;
+  --tienda-dark: #7C3AED;
+  --tienda-light: #F5F3FF;
   --danger: #EF4444;
   --danger-bg: #FEF2F2;
   --success: #10B981;
@@ -141,6 +144,7 @@ a { color: inherit; text-decoration: none; }
 .selector-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 .selector-card.cocina { background: linear-gradient(135deg, #F97316, #FBBF24); color: #fff; }
 .selector-card.barra  { background: linear-gradient(135deg, #3B82F6, #06B6D4); color: #fff; }
+.selector-card.tienda { background: linear-gradient(135deg, #8B5CF6, #EC4899); color: #fff; }
 .selector-card-icon { font-size: 48px; }
 .selector-card-info { flex: 1; }
 .selector-card-label { font-size: 22px; font-weight: 800; }
@@ -600,4 +604,88 @@ select.form-input:focus { border-color: var(--text); }
   .inv-content { max-width: 600px; margin: 0 auto; }
   .fab { right: calc(50% - 280px + 12px); }
   .btn-submit { max-width: 600px; left: 50%; transform: translateX(-50%); right: auto; }
+}
+
+/* ===== CLOTHING SIZES STYLING ===== */
+.clothing-sizes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+.size-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.size-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-2);
+}
+.size-qty-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.qty-btn-sm {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .1s;
+  user-select: none;
+}
+.qty-btn-sm:active { transform: scale(0.9); }
+.qty-btn-sm.minus { background: #9CA3AF; }
+.qty-btn-sm.plus { background: var(--success); }
+.qty-input-sm {
+  width: 38px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 3px 2px;
+  color: var(--text);
+  background: var(--card);
+  outline: none;
+  -moz-appearance: textfield;
+}
+.qty-input-sm::-webkit-outer-spin-button,
+.qty-input-sm::-webkit-inner-spin-button { -webkit-appearance: none; }
+.qty-input-sm:focus { border-color: var(--success); }
+
+.clothing-total-row {
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-2);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Switch Form Label */
+.form-label-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 4px 0;
+  user-select: none;
+}
+.form-label-switch input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--tienda);
+  cursor: pointer;
 }

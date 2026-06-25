@@ -45,10 +45,24 @@ function subscribeToDraft() {
     isFirst = false;
 
     products.forEach(p => {
-      const newQty = saved[p.id] !== undefined ? Number(saved[p.id]) : 0;
-      if (quantities[p.id] !== newQty) {
-        quantities[p.id] = newQty;
-        changed = true;
+      if (p.esRopa === true) {
+        const savedObj = saved[p.id] || {};
+        if (typeof quantities[p.id] !== 'object' || quantities[p.id] === null) {
+          quantities[p.id] = { XS: 0, S: 0, M: 0, L: 0, XL: 0, '2XL': 0 };
+        }
+        ['XS', 'S', 'M', 'L', 'XL', '2XL'].forEach(size => {
+          const newQty = savedObj[size] !== undefined ? Number(savedObj[size]) : 0;
+          if (quantities[p.id][size] !== newQty) {
+            quantities[p.id][size] = newQty;
+            changed = true;
+          }
+        });
+      } else {
+        const newQty = saved[p.id] !== undefined ? Number(saved[p.id]) : 0;
+        if (quantities[p.id] !== newQty) {
+          quantities[p.id] = newQty;
+          changed = true;
+        }
       }
     });
     if (changed) renderProducts();
@@ -91,7 +105,13 @@ async function loadProducts() {
       products.map(p => p.nombre + ' (' + (p.categoria || 'sin cat') + ')'));
 
     // Inicializar todos en 0 localmente
-    products.forEach(p => { quantities[p.id] = 0; });
+    products.forEach(p => {
+      if (p.esRopa === true) {
+        quantities[p.id] = { XS: 0, S: 0, M: 0, L: 0, XL: 0, '2XL': 0 };
+      } else {
+        quantities[p.id] = 0;
+      }
+    });
 
     // Mostrar productos de inmediato
     try {
@@ -112,8 +132,15 @@ async function loadProducts() {
 
 /* ── Header ───────────────────────────────────────────────────────────────── */
 function renderInventoryScreen() {
-  const label = currentSection === 'cocina' ? '🍳 Cocina' : '🍹 Barra';
-  const color = currentSection === 'cocina' ? 'var(--cocina)' : 'var(--barra)';
+  let label = '👕 Tienda';
+  let color = 'var(--tienda)';
+  if (currentSection === 'cocina') {
+    label = '🍳 Cocina';
+    color = 'var(--cocina)';
+  } else if (currentSection === 'barra') {
+    label = '🍹 Barra';
+    color = 'var(--barra)';
+  }
   document.getElementById('inv-title').textContent = label;
   document.getElementById('inv-header').style.borderBottomColor = color;
   document.getElementById('inv-fab').style.background = color;
@@ -159,13 +186,53 @@ function renderProducts() {
 }
 
 function buildProductCard(p, container) {
-  const qty        = quantities[p.id] ?? 0;
-  const isFaltante = qty < p.minimo;
+  const isClothing = p.esRopa === true;
+  let totalQty = 0;
+  if (isClothing) {
+    const sizeData = quantities[p.id] || {};
+    totalQty = ['XS', 'S', 'M', 'L', 'XL', '2XL'].reduce((sum, s) => sum + (Number(sizeData[s]) || 0), 0);
+  } else {
+    totalQty = Number(quantities[p.id]) || 0;
+  }
+  const isFaltante = totalQty < p.minimo;
   const card       = document.createElement('div');
   card.className   = 'product-card' + (isFaltante ? ' faltante' : '');
   card.id          = 'card-' + p.id;
 
   const safeNombre = p.nombre.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+
+  let qtyControlsHtml = '';
+  if (isClothing) {
+    const sizeData = quantities[p.id] || {};
+    qtyControlsHtml = `
+      <div class="clothing-sizes-grid">
+        ${['XS', 'S', 'M', 'L', 'XL', '2XL'].map(size => {
+          const sizeQty = Number(sizeData[size]) || 0;
+          return `
+            <div class="size-control">
+              <span class="size-label">${size}</span>
+              <div class="size-qty-actions">
+                <button class="qty-btn-sm minus" onclick="adjustSizeQty('${p.id}', '${size}', -1)">−</button>
+                <input class="qty-input-sm size-input-${size}" type="number" inputmode="numeric" min="0" value="${sizeQty}" onchange="setSizeQty('${p.id}', '${size}', this.value)" />
+                <button class="qty-btn-sm plus" onclick="adjustSizeQty('${p.id}', '${size}', 1)">+</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+      <div class="clothing-total-row">
+        <span>Total en stock: <strong>${totalQty}</strong></span>
+      </div>
+    `;
+  } else {
+    qtyControlsHtml = `
+      <div class="card-qty">
+        <button class="qty-btn minus" onclick="adjustQty('${p.id}', -1)">−</button>
+        <input class="qty-input" type="number" inputmode="numeric" min="0" value="${totalQty}" onchange="setQty('${p.id}', this.value)" />
+        <button class="qty-btn plus" onclick="adjustQty('${p.id}', 1)">+</button>
+      </div>
+    `;
+  }
 
   card.innerHTML =
     '<div class="card-top">' +
@@ -176,12 +243,7 @@ function buildProductCard(p, container) {
         'onclick="deleteProduct(\'' + p.id + '\', \'' + safeNombre + '\')" ' +
         'title="Eliminar producto">🗑️</button>' +
     '</div>' +
-    '<div class="card-qty">' +
-      '<button class="qty-btn minus" onclick="adjustQty(\'' + p.id + '\', -1)">−</button>' +
-      '<input class="qty-input" type="number" inputmode="numeric" min="0"' +
-        ' value="' + qty + '" onchange="setQty(\'' + p.id + '\', this.value)" />' +
-      '<button class="qty-btn plus" onclick="adjustQty(\'' + p.id + '\', 1)">+</button>' +
-    '</div>' +
+    qtyControlsHtml +
     '<div class="card-footer">' +
       '<span class="card-min">Mínimo: ' + p.minimo + '</span>' +
       (isFaltante
@@ -205,15 +267,51 @@ window.setQty = function(id, val) {
   persistQuantities();
 };
 
+window.adjustSizeQty = function(id, size, delta) {
+  if (typeof quantities[id] !== 'object' || quantities[id] === null) {
+    quantities[id] = { XS: 0, S: 0, M: 0, L: 0, XL: 0, '2XL': 0 };
+  }
+  const currentVal = Number(quantities[id][size]) || 0;
+  quantities[id][size] = Math.max(0, currentVal + delta);
+  refreshCard(id);
+  persistQuantities();
+};
+
+window.setSizeQty = function(id, size, val) {
+  if (typeof quantities[id] !== 'object' || quantities[id] === null) {
+    quantities[id] = { XS: 0, S: 0, M: 0, L: 0, XL: 0, '2XL': 0 };
+  }
+  quantities[id][size] = Math.max(0, parseInt(val) || 0);
+  refreshCard(id);
+  persistQuantities();
+};
+
 function refreshCard(id) {
   const p = products.find(x => x.id === id);
   if (!p) return;
-  const qty        = quantities[id];
-  const isFaltante = qty < p.minimo;
-  const card       = document.getElementById('card-' + id);
+  const isClothing = p.esRopa === true;
+  let totalQty = 0;
+  
+  const card = document.getElementById('card-' + id);
   if (!card) return;
+
+  if (isClothing) {
+    const sizeData = quantities[id] || {};
+    totalQty = ['XS', 'S', 'M', 'L', 'XL', '2XL'].reduce((sum, s) => sum + (Number(sizeData[s]) || 0), 0);
+    ['XS', 'S', 'M', 'L', 'XL', '2XL'].forEach(size => {
+      const input = card.querySelector('.size-input-' + size);
+      if (input) input.value = Number(sizeData[size]) || 0;
+    });
+    const totalEl = card.querySelector('.clothing-total-row span strong');
+    if (totalEl) totalEl.textContent = totalQty;
+  } else {
+    totalQty = Number(quantities[id]) || 0;
+    const input = card.querySelector('.qty-input');
+    if (input) input.value = totalQty;
+  }
+
+  const isFaltante = totalQty < p.minimo;
   card.className = 'product-card' + (isFaltante ? ' faltante' : '');
-  card.querySelector('.qty-input').value = qty;
   card.querySelector('.card-footer').innerHTML =
     '<span class="card-min">Mínimo: ' + p.minimo + '</span>' +
     (isFaltante
@@ -277,7 +375,12 @@ async function saveCategoria(nombre) {
 
 /* ── Modal Agregar Producto ───────────────────────────────────────────────── */
 export async function openAddProductModal() {
-  const accentColor = currentSection === 'cocina' ? 'var(--cocina)' : 'var(--barra)';
+  let accentColor = 'var(--tienda)';
+  if (currentSection === 'cocina') {
+    accentColor = 'var(--cocina)';
+  } else if (currentSection === 'barra') {
+    accentColor = 'var(--barra)';
+  }
 
   // Cargar categorías frescas desde Firestore
   await loadCategorias();
@@ -292,7 +395,7 @@ export async function openAddProductModal() {
 
       '<label class="form-label">Nombre del Producto *' +
         '<input class="form-input" id="np-nombre" type="text"' +
-        ' placeholder="Ej: Aceite de oliva" required autocomplete="off" />' +
+        ' placeholder="Ej: Playera Polo" required autocomplete="off" />' +
       '</label>' +
 
       '<label class="form-label">Categoría *' +
@@ -306,11 +409,18 @@ export async function openAddProductModal() {
       '<div id="np-cat-new-wrap" style="display:none">' +
         '<label class="form-label">Nombre de la nueva categoría *' +
           '<input class="form-input" id="np-cat-nueva" type="text"' +
-          ' placeholder="Ej: Postres" autocomplete="off" />' +
+          ' placeholder="Ej: Ropa" autocomplete="off" />' +
         '</label>' +
       '</div>' +
 
-      '<label class="form-label">Cantidad inicial' +
+      (currentSection === 'tienda' ? `
+        <label class="form-label-switch">
+          <input type="checkbox" id="np-es-ropa" onchange="toggleClothingInitialQty(this.checked)" />
+          <span>👕 Es prenda de ropa (tallas XS-2XL)</span>
+        </label>
+      ` : '') +
+
+      '<label class="form-label" id="np-qty-label">Cantidad inicial' +
         '<input class="form-input" id="np-qty" type="number"' +
         ' inputmode="numeric" min="0" value="0" />' +
       '</label>' +
@@ -324,6 +434,13 @@ export async function openAddProductModal() {
       ' style="background:' + accentColor + '">Agregar</button>' +
     '</form>'
   );
+
+  window.toggleClothingInitialQty = function(isRopa) {
+    const qtyLabel = document.getElementById('np-qty-label');
+    if (qtyLabel) {
+      qtyLabel.style.display = isRopa ? 'none' : 'flex';
+    }
+  };
 
   window.handleCatChange = function(val) {
     const wrap     = document.getElementById('np-cat-new-wrap');
@@ -348,6 +465,7 @@ export async function openAddProductModal() {
       : selectVal;
     const qty    = parseInt(document.getElementById('np-qty').value)  || 0;
     const minimo = parseInt(document.getElementById('np-min').value)  || 0;
+    const esRopa = document.getElementById('np-es-ropa')?.checked || false;
 
     if (!nombre || !categoria) {
       showToast('Completa nombre y categoría', 'error');
@@ -360,15 +478,25 @@ export async function openAddProductModal() {
         categoria = await saveCategoria(categoria);
       }
 
-      const ref = await addDoc(collection(db, 'products'), {
+      const productData = {
         nombre, categoria, minimo,
         seccion: currentSection,
         activo: true,
         creadoEn: serverTimestamp()
-      });
-      const newProduct = { id: ref.id, nombre, categoria, minimo, seccion: currentSection, activo: true };
+      };
+      if (esRopa) {
+        productData.esRopa = true;
+      }
+
+      const ref = await addDoc(collection(db, 'products'), productData);
+      const newProduct = { id: ref.id, ...productData, creadoEn: null };
       products.push(newProduct);
-      quantities[ref.id] = qty;
+      
+      if (esRopa) {
+        quantities[ref.id] = { XS: 0, S: 0, M: 0, L: 0, XL: 0, '2XL': 0 };
+      } else {
+        quantities[ref.id] = qty;
+      }
       persistQuantities();
       closeModal();
       renderProducts();
@@ -381,7 +509,16 @@ export async function openAddProductModal() {
 
 /* ── Enviar Reporte ───────────────────────────────────────────────────────── */
 export async function submitReport(user) {
-  const faltantes = products.filter(p => (quantities[p.id] ?? 0) < p.minimo);
+  const faltantes = products.filter(p => {
+    let totalQty = 0;
+    if (p.esRopa === true) {
+      const sizeData = quantities[p.id] || {};
+      totalQty = ['XS', 'S', 'M', 'L', 'XL', '2XL'].reduce((sum, s) => sum + (Number(sizeData[s]) || 0), 0);
+    } else {
+      totalQty = Number(quantities[p.id]) || 0;
+    }
+    return totalQty < p.minimo;
+  });
 
   const ok = await showConfirm(
     '¿Enviar reporte?\n\n' + products.length + ' productos · ' + faltantes.length + ' faltantes',
@@ -389,14 +526,34 @@ export async function submitReport(user) {
   );
   if (!ok) return;
 
-  const snapshot = products.map(p => ({
-    id:          p.id,
-    nombre:      p.nombre,
-    categoria:   p.categoria || 'Sin categoría',
-    cantidad:    quantities[p.id] ?? 0,
-    minimo:      p.minimo,
-    esFaltante:  (quantities[p.id] ?? 0) < p.minimo
-  }));
+  const snapshot = products.map(p => {
+    let totalQty = 0;
+    if (p.esRopa === true) {
+      const sizeData = quantities[p.id] || {};
+      totalQty = ['XS', 'S', 'M', 'L', 'XL', '2XL'].reduce((sum, s) => sum + (Number(sizeData[s]) || 0), 0);
+      return {
+        id:          p.id,
+        nombre:      p.nombre,
+        categoria:   p.categoria || 'Sin categoría',
+        cantidad:    sizeData,
+        totalCantidad: totalQty,
+        esRopa:      true,
+        minimo:      p.minimo,
+        esFaltante:  totalQty < p.minimo
+      };
+    } else {
+      totalQty = Number(quantities[p.id]) || 0;
+      return {
+        id:          p.id,
+        nombre:      p.nombre,
+        categoria:   p.categoria || 'Sin categoría',
+        cantidad:    totalQty,
+        minimo:      p.minimo,
+        esFaltante:  totalQty < p.minimo
+      };
+    }
+  });
+
   try {
     await generateAndSaveReport({
       seccion:       currentSection,

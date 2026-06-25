@@ -28,8 +28,15 @@ export async function renderReportsPanel(filterSection = 'all') {
       }
       const card = document.createElement('div');
       card.className = 'report-card';
-      const secLabel = r.seccion === 'cocina' ? '🍳 Cocina' : '🍹 Barra';
-      const accentVar = r.seccion === 'cocina' ? 'var(--cocina)' : 'var(--barra)';
+      let secLabel = '👕 Tienda';
+      let accentVar = 'var(--tienda)';
+      if (r.seccion === 'cocina') {
+        secLabel = '🍳 Cocina';
+        accentVar = 'var(--cocina)';
+      } else if (r.seccion === 'barra') {
+        secLabel = '🍹 Barra';
+        accentVar = 'var(--barra)';
+      }
       card.innerHTML = `
         <div class="report-left">
           <span class="report-section-badge" style="background:${accentVar}">${secLabel}</span>

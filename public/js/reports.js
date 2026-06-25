@@ -27,16 +27,23 @@ export function generatePDF({ seccion, creadoPor, productos, totalFaltantes, fec
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-  const accentR = seccion === 'cocina' ? 249 : 59;
-  const accentG = seccion === 'cocina' ? 115 : 130;
-  const accentB = seccion === 'cocina' ?  22 : 246;
+  let accentR = 139; // default tienda #8B5CF6 (139, 92, 246)
+  let accentG = 92;
+  let accentB = 246;
+  if (seccion === 'cocina') {
+    accentR = 249; accentG = 115; accentB = 22;
+  } else if (seccion === 'barra') {
+    accentR = 59; accentG = 130; accentB = 246;
+  }
 
   const W = doc.internal.pageSize.getWidth();
   const dateStr = fecha instanceof Date
     ? fecha.toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
     : String(fecha);
 
-  const secLabel = seccion === 'cocina' ? 'Cocina' : 'Barra';
+  let secLabel = 'Tienda';
+  if (seccion === 'cocina') secLabel = 'Cocina';
+  else if (seccion === 'barra') secLabel = 'Barra';
 
   // ── Header band ──────────────────────────────────────────────────────────
   doc.setFillColor(accentR, accentG, accentB);
@@ -71,12 +78,21 @@ export function generatePDF({ seccion, creadoPor, productos, totalFaltantes, fec
 
   sortedCats.forEach(cat => {
     const rows = groups[cat];
-    const tableRows = rows.map(p => [
-      p.nombre,
-      String(p.cantidad),
-      String(p.minimo),
-      p.esFaltante ? 'FALTANTE' : 'OK'
-    ]);
+    const tableRows = rows.map(p => {
+      let qtyStr = '';
+      if (p.esRopa) {
+        const d = p.cantidad || {};
+        qtyStr = `${p.totalCantidad || 0}\n[XS:${d.XS || 0}, S:${d.S || 0}, M:${d.M || 0}, L:${d.L || 0}, XL:${d.XL || 0}, 2XL:${d['2XL'] || 0}]`;
+      } else {
+        qtyStr = String(p.cantidad);
+      }
+      return [
+        p.nombre,
+        qtyStr,
+        String(p.minimo),
+        p.esFaltante ? 'FALTANTE' : 'OK'
+      ];
+    });
 
     // Category header row
     doc.autoTable({
@@ -98,8 +114,8 @@ export function generatePDF({ seccion, creadoPor, productos, totalFaltantes, fec
       headStyles: { fillColor: [230, 230, 230], textColor: [50, 50, 50], fontStyle: 'bold', fontSize: 9 },
       bodyStyles: { fontSize: 9 },
       columnStyles: {
-        0: { cellWidth: 80 },
-        1: { cellWidth: 25, halign: 'center' },
+        0: { cellWidth: 70 },
+        1: { cellWidth: 35, halign: 'center' },
         2: { cellWidth: 25, halign: 'center' },
         3: { cellWidth: 40, halign: 'center' }
       },
@@ -157,14 +173,27 @@ export function generatePDF({ seccion, creadoPor, productos, totalFaltantes, fec
 
     const pedidoRows = faltantes
       .sort((a, b) => (a.categoria || '').localeCompare(b.categoria || '', 'es'))
-      .map((p, i) => [
-        String(i + 1),
-        p.categoria || 'Sin categoria',
-        p.nombre,
-        String(p.cantidad),
-        String(p.minimo),
-        String(p.minimo - p.cantidad)
-      ]);
+      .map((p, i) => {
+        let qtyStr = '';
+        let diff = 0;
+        if (p.esRopa) {
+          const d = p.cantidad || {};
+          const tot = p.totalCantidad || 0;
+          qtyStr = `${tot}\n[XS:${d.XS || 0}, S:${d.S || 0}, M:${d.M || 0}, L:${d.L || 0}, XL:${d.XL || 0}, 2XL:${d['2XL'] || 0}]`;
+          diff = p.minimo - tot;
+        } else {
+          qtyStr = String(p.cantidad);
+          diff = p.minimo - p.cantidad;
+        }
+        return [
+          String(i + 1),
+          p.categoria || 'Sin categoria',
+          p.nombre,
+          qtyStr,
+          String(p.minimo),
+          String(diff)
+        ];
+      });
 
     doc.autoTable({
       startY,
@@ -175,9 +204,9 @@ export function generatePDF({ seccion, creadoPor, productos, totalFaltantes, fec
       bodyStyles: { fontSize: 9 },
       columnStyles: {
         0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 38 },
-        2: { cellWidth: 68 },
-        3: { cellWidth: 16, halign: 'center' },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 60 },
+        3: { cellWidth: 27, halign: 'center' },
         4: { cellWidth: 16, halign: 'center' },
         5: { cellWidth: 20, halign: 'center', fontStyle: 'bold', textColor: [185, 28, 28] }
       },
