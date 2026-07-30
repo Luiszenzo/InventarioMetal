@@ -64,6 +64,15 @@
         </div>
         <span class="selector-card-arrow">›</span>
       </button>
+
+      <button class="selector-card propinas" onclick="selectSection('propinas')" id="btn-propinas">
+        <span class="selector-card-icon">💵</span>
+        <div class="selector-card-info">
+          <span class="selector-card-label">Propinas</span>
+          <span class="selector-card-desc">Registro y gestión de propinas del restaurante</span>
+        </div>
+        <span class="selector-card-arrow">›</span>
+      </button>
     </div>
   </section>
 
@@ -109,6 +118,137 @@
       <div class="admin-tab-panel" id="tab-users">
         <button class="admin-add-btn" onclick="openNewUser()">+ Nuevo empleado</button>
         <div id="users-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== VIEW: PROPINAS ===== -->
+  <section class="view" id="view-propinas">
+    <div class="propinas-content">
+      <!-- Tabs -->
+      <div class="propinas-tabs">
+        <button class="propinas-tab-btn active" id="tab-btn-prop-registrar" onclick="switchPropinasTab('registrar')">💵 Registrar</button>
+        <button class="propinas-tab-btn" id="tab-btn-prop-historial" onclick="switchPropinasTab('historial')">📅 Historial y Resumen</button>
+        <button class="propinas-tab-btn" id="tab-btn-prop-reportes" onclick="switchPropinasTab('reportes')">📋 Reportes</button>
+      </div>
+
+      <!-- Registrar panel -->
+      <div class="propinas-tab-panel active" id="tab-prop-registrar">
+        <form id="registrar-ticket-form" class="form-stack">
+          <label class="form-label">Fecha del Ticket *
+            <input class="form-input" id="pt-fecha" type="date" required />
+          </label>
+          <label class="form-label">Monto de Propina *
+            <div class="monto-input-wrapper">
+              <span class="monto-symbol">$</span>
+              <input class="form-input" id="pt-monto" type="number" step="0.01" min="0.01" placeholder="0.00" required />
+            </div>
+          </label>
+          <label class="form-label">Empleados Participantes *
+            <div class="empleados-checklist-grid" id="pt-empleados-grid">
+              <!-- Cargado dinámicamente -->
+            </div>
+          </label>
+          <button type="submit" class="btn-primary" style="background: var(--success)">Agregar Ticket</button>
+        </form>
+      </div>
+
+      <!-- Historial panel -->
+      <div class="propinas-tab-panel" id="tab-prop-historial">
+        <!-- Filtros y Buscador -->
+        <div class="search-filters-row">
+          <div class="filter-group">
+            <span class="filter-label">Agrupar por:</span>
+            <div class="btn-group-toggle">
+              <button class="toggle-btn active" id="group-btn-day" onclick="setGroupFilter('day')">Día</button>
+              <button class="toggle-btn" id="group-btn-week" onclick="setGroupFilter('week')">Semana</button>
+              <button class="toggle-btn" id="group-btn-month" onclick="setGroupFilter('month')">Mes</button>
+              <button class="toggle-btn" id="group-btn-year" onclick="setGroupFilter('year')">Año</button>
+            </div>
+          </div>
+          
+          <div class="filter-inputs-grid">
+            <label class="form-label">Filtrar por Fecha
+              <input class="form-input" id="filter-date" type="date" onchange="applyFilters()" />
+            </label>
+            <label class="form-label">Buscar por Empleado
+              <select class="form-input" id="filter-empleado" onchange="applyFilters()">
+                <option value="">Todos los empleados</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <!-- Tabla Resumen Semanal -->
+        <div class="summary-section">
+          <h3 class="section-title-sm">Tabla de Resumen Semanal</h3>
+          <div class="table-responsive">
+            <table class="summary-table" id="prop-weekly-table">
+              <thead>
+                <tr>
+                  <th>Semana</th>
+                  <th>Total</th>
+                  <th>Desglose por Empleado</th>
+                </tr>
+              </thead>
+              <tbody id="prop-weekly-tbody">
+                <!-- Se llena dinámicamente -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tickets-grouped-list" id="tickets-list">
+          <!-- Se llena dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Reportes panel -->
+      <div class="propinas-tab-panel" id="tab-prop-reportes">
+        <form id="reportes-form" class="form-stack">
+          <label class="form-label">Tipo de Reporte *
+            <select class="form-input" id="rep-tipo" onchange="handleReportTypeChange(this.value)">
+              <option value="diario">Diario</option>
+              <option value="semanal">Semanal</option>
+              <option value="mensual">Mensual</option>
+              <option value="personalizado">Rango Personalizado</option>
+            </select>
+          </label>
+
+          <div id="rep-param-diario-wrap">
+            <label class="form-label">Día del Reporte *
+              <input class="form-input" id="rep-fecha-dia" type="date" />
+            </label>
+          </div>
+
+          <div id="rep-param-semanal-wrap" style="display:none">
+            <label class="form-label">Selecciona un día de la semana a reportar *
+              <input class="form-input" id="rep-fecha-semana" type="date" />
+            </label>
+          </div>
+
+          <div id="rep-param-mensual-wrap" style="display:none">
+            <label class="form-label">Mes a reportar *
+              <input class="form-input" id="rep-fecha-mes" type="month" />
+            </label>
+          </div>
+
+          <div id="rep-param-rango-wrap" style="display:none">
+            <div class="filter-inputs-grid">
+              <label class="form-label">Desde *
+                <input class="form-input" id="rep-fecha-inicio" type="date" />
+              </label>
+              <label class="form-label">Hasta *
+                <input class="form-input" id="rep-fecha-fin" type="date" />
+              </label>
+            </div>
+          </div>
+
+          <div class="report-actions-row">
+            <button type="button" class="btn-primary" onclick="exportTipsReport('pdf')" style="background: #DE2727">📄 Exportar PDF</button>
+            <button type="button" class="btn-primary" onclick="exportTipsReport('csv')" style="background: #10B981">📊 Exportar CSV</button>
+          </div>
+        </form>
       </div>
     </div>
   </section>

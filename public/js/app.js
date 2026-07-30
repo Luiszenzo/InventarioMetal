@@ -2,6 +2,7 @@ import { auth, getUserData, onAuth, logout } from './auth.js';
 import { initInventory, openAddProductModal, submitReport, unsubInventory } from './inventory.js';
 import { renderReportsPanel, renderUsersPanel, openNewUserModal } from './admin.js';
 import { showToast, closeModal } from './ui.js';
+import { initPropinas, switchPropinasTab, setGroupFilter, applyFilters, handleReportTypeChange, exportTipsReport, unsubPropinas } from './propinas.js';
 
 let currentUser = null;
 let currentUserData = null;
@@ -40,6 +41,14 @@ onAuth(async user => {
 
 // ===== SECTION SELECTION =====
 window.selectSection = function(section) {
+  if (section === 'propinas') {
+    showView('view-propinas');
+    initPropinas(currentUser, currentUserData);
+    document.getElementById('inv-header').style.setProperty('--accent', '#10B981');
+    document.getElementById('inv-title').textContent = '💵 Propinas';
+    return;
+  }
+
   showView('view-inventory');
   initInventory(section, currentUserData);
 
@@ -56,7 +65,14 @@ window.selectSection = function(section) {
 // ===== INVENTORY ACTIONS =====
 window.openAddProduct = () => openAddProductModal();
 window.doSubmitReport = () => submitReport(currentUser);
-window.goBack = () => { unsubInventory(); showView('view-selector'); };
+window.goBack = () => { unsubInventory(); unsubPropinas(); showView('view-selector'); };
+
+// ===== PROPINAS ACTIONS =====
+window.switchPropinasTab = (tab) => switchPropinasTab(tab);
+window.setGroupFilter = (group) => setGroupFilter(group);
+window.applyFilters = () => applyFilters();
+window.handleReportTypeChange = (type) => handleReportTypeChange(type);
+window.exportTipsReport = (format) => exportTipsReport(format);
 
 // ===== LOGOUT =====
 window.doLogout = async () => {
