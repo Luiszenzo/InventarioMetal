@@ -447,6 +447,62 @@ a { color: inherit; text-decoration: none; }
 .role-badge.role-admin { background: #FEF3C7; color: #92400E; }
 .role-badge.role-empleado { background: #DBEAFE; color: #1E40AF; }
 
+/* Tips permission toggle switch (iOS-style) */
+.tips-perm-switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 22px;
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.tips-perm-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.tips-perm-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--border);
+  transition: .3s;
+  border-radius: 22px;
+}
+
+.tips-perm-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.tips-perm-switch input:checked + .tips-perm-slider {
+  background-color: #10B981; /* Green accent for propinas */
+}
+
+.tips-perm-switch input:focus + .tips-perm-slider {
+  box-shadow: 0 0 1px #10B981;
+}
+
+.tips-perm-switch input:checked + .tips-perm-slider:before {
+  transform: translateX(16px);
+}
+
+.tips-perm-switch input:disabled + .tips-perm-slider {
+  background-color: var(--border);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .admin-add-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 10px 16px;

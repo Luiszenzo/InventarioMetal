@@ -36,12 +36,24 @@ onAuth(async user => {
     adminMenu.style.display = currentUserData.rol === 'admin' ? 'flex' : 'none';
   }
 
+  // Show/hide propinas menu card based on user permission
+  const btnPropinas = document.getElementById('btn-propinas');
+  if (btnPropinas) {
+    const hasTipsPermission = currentUserData.rol === 'admin' || currentUserData.puedeVerPropinas === true;
+    btnPropinas.style.display = hasTipsPermission ? 'flex' : 'none';
+  }
+
   showView('view-selector');
 });
 
 // ===== SECTION SELECTION =====
 window.selectSection = function(section) {
   if (section === 'propinas') {
+    const hasTipsPermission = currentUserData.rol === 'admin' || currentUserData.puedeVerPropinas === true;
+    if (!hasTipsPermission) {
+      showToast('No tienes permiso para acceder a esta sección.', 'error');
+      return;
+    }
     showView('view-propinas');
     initPropinas(currentUser, currentUserData);
     document.getElementById('inv-header').style.setProperty('--accent', '#10B981');

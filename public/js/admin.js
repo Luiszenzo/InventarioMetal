@@ -89,6 +89,7 @@ export async function renderUsersPanel() {
     users.forEach(u => {
       const card = document.createElement('div');
       card.className = 'user-card';
+      const isTipChecked = u.rol === 'admin' || u.puedeVerPropinas === true;
       card.innerHTML = `
         <div class="user-info">
           <span class="user-avatar">${(u.nombre || 'U')[0].toUpperCase()}</span>
@@ -98,6 +99,10 @@ export async function renderUsersPanel() {
           </div>
         </div>
         <div class="user-actions">
+          <label class="tips-perm-switch" title="Permiso de Propinas (Ver/Gestionar)">
+            <input type="checkbox" ${u.rol === 'admin' ? 'disabled checked' : ''} ${isTipChecked ? 'checked' : ''} onchange="toggleTipsPermission('${u.id}', this.checked)">
+            <span class="tips-perm-slider"></span>
+          </label>
           <span class="role-badge role-${u.rol}">${u.rol}</span>
           <button class="btn-trash" onclick="deleteUser('${u.id}', '${(u.nombre||'').replace(/'/g,"\\'")}')">🗑️</button>
         </div>`;
@@ -108,6 +113,27 @@ export async function renderUsersPanel() {
     container.innerHTML = '';
   }
 }
+
+// Global function to toggle permission
+window.toggleTipsPermission = async function(uid, checked) {
+  try {
+    const token = await getToken();
+    const res = await fetch(`/api/users/${uid}`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` 
+      },
+      body: JSON.stringify({ puedeVerPropinas: checked })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    showToast('Permiso de propinas actualizado ✅', 'success');
+  } catch (err) {
+    showToast('Error al actualizar permiso: ' + err.message, 'error');
+    renderUsersPanel();
+  }
+};
 
 export function openNewUserModal() {
   openModal(`
@@ -123,10 +149,14 @@ export function openNewUserModal() {
         <input class="form-input" id="nu-pass" type="password" placeholder="Mínimo 6 caracteres" required minlength="6" />
       </label>
       <label class="form-label">Rol
-        <select class="form-input" id="nu-rol">
+        <select class="form-input" id="nu-rol" onchange="const chk = document.getElementById('nu-propinas'); chk.disabled = this.value === 'admin'; if(this.value === 'admin') chk.checked = true;">
           <option value="empleado">Empleado</option>
           <option value="admin">Administrador</option>
         </select>
+      </label>
+      <label class="form-label checkbox-label" style="flex-direction: row; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px; margin-bottom: 12px; font-weight: 500;">
+        <input type="checkbox" id="nu-propinas" style="width: 18px; height: 18px; cursor: pointer;" />
+        <span>Permiso para ver/gestionar propinas</span>
       </label>
       <button type="submit" class="btn-primary">Crear usuario</button>
     </form>
@@ -146,7 +176,8 @@ export function openNewUserModal() {
           nombre: document.getElementById('nu-nombre').value.trim(),
           email: document.getElementById('nu-email').value.trim(),
           password: document.getElementById('nu-pass').value,
-          rol: document.getElementById('nu-rol').value
+          rol: document.getElementById('nu-rol').value,
+          puedeVerPropinas: document.getElementById('nu-propinas').checked
         })
       });
       const data = await res.json();

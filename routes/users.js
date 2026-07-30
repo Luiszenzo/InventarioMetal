@@ -33,7 +33,7 @@ router.get('/', verifyAdmin, async (req, res) => {
 
 // POST /api/users/create — crear nuevo usuario
 router.post('/create', verifyAdmin, async (req, res) => {
-  const { nombre, email, password, rol } = req.body;
+  const { nombre, email, password, rol, puedeVerPropinas } = req.body;
   if (!nombre || !email || !password) {
     return res.status(400).json({ error: 'Faltan campos requeridos' });
   }
@@ -43,9 +43,25 @@ router.post('/create', verifyAdmin, async (req, res) => {
       nombre,
       email,
       rol: rol || 'empleado',
+      puedeVerPropinas: puedeVerPropinas || false,
       creadoEn: new Date().toISOString()
     });
     res.json({ success: true, uid: userRecord.uid });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// PUT /api/users/:uid — actualizar usuario (rol, puedeVerPropinas, etc.)
+router.put('/:uid', verifyAdmin, async (req, res) => {
+  const { rol, puedeVerPropinas } = req.body;
+  try {
+    const updateData = {};
+    if (rol !== undefined) updateData.rol = rol;
+    if (puedeVerPropinas !== undefined) updateData.puedeVerPropinas = puedeVerPropinas;
+    
+    await db.collection('users').doc(req.params.uid).update(updateData);
+    res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
