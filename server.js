@@ -18,11 +18,6 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', file));
 });
 
-// Solo escucha localmente; Vercel importa el módulo directamente
-if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
-  });
-}
-
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
+});
