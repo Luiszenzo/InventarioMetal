@@ -225,19 +225,33 @@ function buildProductCard(p, container) {
       </div>
     `;
   } else {
+    const unidad = p.unidad || 'pzas';
+    const isDecimal = (unidad === 'kg' || unidad === 'L');
+    const inputType = isDecimal ? 'number' : 'number';
+    const inputMode = isDecimal ? 'decimal' : 'numeric';
+    const stepAttr = isDecimal ? 'step="0.5"' : 'step="1"';
+    let unitLabel = unidad;
+    if (unidad === 'paquete' && p.piezasPorPaquete) {
+      unitLabel = `paq. (${p.piezasPorPaquete} pzas c/u)`;
+    }
     qtyControlsHtml = `
       <div class="card-qty">
         <button class="qty-btn minus" onclick="adjustQty('${p.id}', -1)">−</button>
-        <input class="qty-input" type="number" inputmode="numeric" min="0" value="${totalQty}" onchange="setQty('${p.id}', this.value)" />
+        <input class="qty-input" type="${inputType}" inputmode="${inputMode}" min="0" ${stepAttr} value="${totalQty}" onchange="setQty('${p.id}', this.value)" />
+        <span class="qty-unit">${unitLabel}</span>
         <button class="qty-btn plus" onclick="adjustQty('${p.id}', 1)">+</button>
       </div>
     `;
   }
 
+  const unidadLabel = (p.unidad && p.unidad !== 'pzas') ? p.unidad : 'pzas';
+  const minimoLabel = p.minimo + ' ' + unidadLabel;
+
   card.innerHTML =
     '<div class="card-top">' +
       '<div class="card-info">' +
         '<span class="card-name">' + p.nombre + '</span>' +
+        (p.unidad && p.unidad !== 'pzas' ? '<span class="card-unit-badge">' + p.unidad + '</span>' : '') +
       '</div>' +
       '<button class="btn-trash" ' +
         'onclick="deleteProduct(\'' + p.id + '\', \'' + safeNombre + '\')" ' +
@@ -245,7 +259,7 @@ function buildProductCard(p, container) {
     '</div>' +
     qtyControlsHtml +
     '<div class="card-footer">' +
-      '<span class="card-min">Mínimo: ' + p.minimo + '</span>' +
+      '<span class="card-min">Mínimo: ' + minimoLabel + '</span>' +
       (isFaltante
         ? '<span class="badge-faltante">⚠️ Faltante</span>'
         : '<span class="badge-ok">✅ OK</span>') +
@@ -256,13 +270,17 @@ function buildProductCard(p, container) {
 
 /* ── Controles de cantidad ────────────────────────────────────────────────── */
 window.adjustQty = function(id, delta) {
-  quantities[id] = Math.max(0, (quantities[id] ?? 0) + delta);
+  const p = products.find(x => x.id === id);
+  const step = (p && (p.unidad === 'kg' || p.unidad === 'L')) ? 0.5 : 1;
+  quantities[id] = Math.max(0, parseFloat(((quantities[id] ?? 0) + delta * step).toFixed(3)));
   refreshCard(id);       // actualización inmediata en la UI
   persistQuantities();   // guardado en Firestore con debounce
 };
 
 window.setQty = function(id, val) {
-  quantities[id] = Math.max(0, parseInt(val) || 0);
+  const p = products.find(x => x.id === id);
+  const isDecimal = p && (p.unidad === 'kg' || p.unidad === 'L');
+  quantities[id] = Math.max(0, isDecimal ? (parseFloat(val) || 0) : (parseInt(val) || 0));
   refreshCard(id);
   persistQuantities();
 };
@@ -312,8 +330,9 @@ function refreshCard(id) {
 
   const isFaltante = totalQty < p.minimo;
   card.className = 'product-card' + (isFaltante ? ' faltante' : '');
+  const unidadLabelR = (p.unidad && p.unidad !== 'pzas') ? p.unidad : 'pzas';
   card.querySelector('.card-footer').innerHTML =
-    '<span class="card-min">Mínimo: ' + p.minimo + '</span>' +
+    '<span class="card-min">Mínimo: ' + p.minimo + ' ' + unidadLabelR + '</span>' +
     (isFaltante
       ? '<span class="badge-faltante">⚠️ Faltante</span>'
       : '<span class="badge-ok">✅ OK</span>');
@@ -389,13 +408,16 @@ export async function openAddProductModal() {
     .map(c => '<option value="' + c.nombre + '">' + c.nombre + '</option>')
     .join('');
 
+  const unidadesHtml = ['pzas', 'kg', 'g', 'L', 'mL', 'paquete']
+    .map(u => `<option value="${u}">${u}</option>`).join('');
+
   openModal(
     '<h2 class="modal-title">Agregar Producto</h2>' +
     '<form id="add-product-form" class="form-stack">' +
 
       '<label class="form-label">Nombre del Producto *' +
         '<input class="form-input" id="np-nombre" type="text"' +
-        ' placeholder="Ej: Playera Polo" required autocomplete="off" />' +
+        ' placeholder="Ej: Aceite de oliva" required autocomplete="off" />' +
       '</label>' +
 
       '<label class="form-label">Categoría *' +
@@ -409,7 +431,7 @@ export async function openAddProductModal() {
       '<div id="np-cat-new-wrap" style="display:none">' +
         '<label class="form-label">Nombre de la nueva categoría *' +
           '<input class="form-input" id="np-cat-nueva" type="text"' +
-          ' placeholder="Ej: Ropa" autocomplete="off" />' +
+          ' placeholder="Ej: Lácteos" autocomplete="off" />' +
         '</label>' +
       '</div>' +
 
@@ -420,14 +442,26 @@ export async function openAddProductModal() {
         </label>
       ` : '') +
 
+      '<label class="form-label">Unidad de medida *' +
+        '<select class="form-input" id="np-unidad" onchange="handleUnidadChange(this.value)">' +
+          unidadesHtml +
+        '</select>' +
+      '</label>' +
+
+      '<div id="np-piezas-wrap" style="display:none">' +
+        '<label class="form-label">Piezas por paquete *' +
+          '<input class="form-input" id="np-piezas" type="number" inputmode="numeric" min="1" value="12" />' +
+        '</label>' +
+      '</div>' +
+
       '<label class="form-label" id="np-qty-label">Cantidad inicial' +
         '<input class="form-input" id="np-qty" type="number"' +
-        ' inputmode="numeric" min="0" value="0" />' +
+        ' inputmode="decimal" min="0" step="0.5" value="0" />' +
       '</label>' +
 
       '<label class="form-label">Mínimo en stock *' +
         '<input class="form-input" id="np-min" type="number"' +
-        ' inputmode="numeric" min="0" value="1" required />' +
+        ' inputmode="decimal" min="0" step="0.5" value="1" required />' +
       '</label>' +
 
       '<button type="submit" class="btn-primary"' +
@@ -436,10 +470,10 @@ export async function openAddProductModal() {
   );
 
   window.toggleClothingInitialQty = function(isRopa) {
-    const qtyLabel = document.getElementById('np-qty-label');
-    if (qtyLabel) {
-      qtyLabel.style.display = isRopa ? 'none' : 'flex';
-    }
+    const qtyLabel  = document.getElementById('np-qty-label');
+    const unitLabel = document.getElementById('np-unidad')?.closest('label');
+    if (qtyLabel)  qtyLabel.style.display  = isRopa ? 'none' : 'flex';
+    if (unitLabel) unitLabel.style.display = isRopa ? 'none' : 'flex';
   };
 
   window.handleCatChange = function(val) {
@@ -456,6 +490,27 @@ export async function openAddProductModal() {
     }
   };
 
+  window.handleUnidadChange = function(val) {
+    const wrap  = document.getElementById('np-piezas-wrap');
+    const input = document.getElementById('np-piezas');
+    if (val === 'paquete') {
+      wrap.style.display = 'block';
+      input.required = true;
+    } else {
+      wrap.style.display = 'none';
+      input.required = false;
+    }
+    // Ajustar step e inputmode del campo cantidad según unidad
+    const qtyInput = document.getElementById('np-qty');
+    const minInput = document.getElementById('np-min');
+    const isDecimal = (val === 'kg' || val === 'L');
+    [qtyInput, minInput].forEach(el => {
+      if (!el) return;
+      el.step = isDecimal ? '0.5' : '1';
+      el.inputMode = isDecimal ? 'decimal' : 'numeric';
+    });
+  };
+
   document.getElementById('add-product-form').onsubmit = async (e) => {
     e.preventDefault();
     const nombre    = document.getElementById('np-nombre').value.trim();
@@ -463,8 +518,17 @@ export async function openAddProductModal() {
     let   categoria = selectVal === '__nueva__'
       ? document.getElementById('np-cat-nueva').value.trim()
       : selectVal;
-    const qty    = parseInt(document.getElementById('np-qty').value)  || 0;
-    const minimo = parseInt(document.getElementById('np-min').value)  || 0;
+    const unidad = document.getElementById('np-unidad')?.value || 'pzas';
+    const piezasPorPaquete = unidad === 'paquete'
+      ? (parseInt(document.getElementById('np-piezas')?.value) || 1)
+      : null;
+    const isDecimal = (unidad === 'kg' || unidad === 'L');
+    const qty    = isDecimal
+      ? (parseFloat(document.getElementById('np-qty').value) || 0)
+      : (parseInt(document.getElementById('np-qty').value)   || 0);
+    const minimo = isDecimal
+      ? (parseFloat(document.getElementById('np-min').value) || 0)
+      : (parseInt(document.getElementById('np-min').value)   || 0);
     const esRopa = document.getElementById('np-es-ropa')?.checked || false;
 
     if (!nombre || !categoria) {
@@ -480,13 +544,13 @@ export async function openAddProductModal() {
 
       const productData = {
         nombre, categoria, minimo,
+        unidad,
         seccion: currentSection,
         activo: true,
         creadoEn: serverTimestamp()
       };
-      if (esRopa) {
-        productData.esRopa = true;
-      }
+      if (esRopa) productData.esRopa = true;
+      if (piezasPorPaquete) productData.piezasPorPaquete = piezasPorPaquete;
 
       const ref = await addDoc(collection(db, 'products'), productData);
       const newProduct = { id: ref.id, ...productData, creadoEn: null };
@@ -548,6 +612,8 @@ export async function submitReport(user) {
         nombre:      p.nombre,
         categoria:   p.categoria || 'Sin categoría',
         cantidad:    totalQty,
+        unidad:      p.unidad || 'pzas',
+        piezasPorPaquete: p.piezasPorPaquete || null,
         minimo:      p.minimo,
         esFaltante:  totalQty < p.minimo
       };
