@@ -79,17 +79,21 @@ export function generatePDF({ seccion, creadoPor, productos, totalFaltantes, fec
   sortedCats.forEach(cat => {
     const rows = groups[cat];
     const tableRows = rows.map(p => {
+      const unidad = p.unidad || 'pzas';
       let qtyStr = '';
       if (p.esRopa) {
         const d = p.cantidad || {};
         qtyStr = `${p.totalCantidad || 0}\n[XS:${d.XS || 0}, S:${d.S || 0}, M:${d.M || 0}, L:${d.L || 0}, XL:${d.XL || 0}, 2XL:${d['2XL'] || 0}]`;
+      } else if (unidad === 'paquete' && p.piezasPorPaquete) {
+        qtyStr = `${p.cantidad} paq.\n(${p.piezasPorPaquete} pzas c/u)`;
       } else {
-        qtyStr = String(p.cantidad);
+        qtyStr = `${p.cantidad} ${unidad}`;
       }
+      const minimoStr = p.esRopa ? String(p.minimo) : `${p.minimo} ${unidad}`;
       return [
         p.nombre,
         qtyStr,
-        String(p.minimo),
+        minimoStr,
         p.esFaltante ? 'FALTANTE' : 'OK'
       ];
     });
@@ -176,23 +180,43 @@ export function generatePDF({ seccion, creadoPor, productos, totalFaltantes, fec
       .map((p, i) => {
         let qtyStr = '';
         let diff = 0;
+        const unidad = p.unidad || 'pzas';
         if (p.esRopa) {
           const d = p.cantidad || {};
           const tot = p.totalCantidad || 0;
           qtyStr = `${tot}\n[XS:${d.XS || 0}, S:${d.S || 0}, M:${d.M || 0}, L:${d.L || 0}, XL:${d.XL || 0}, 2XL:${d['2XL'] || 0}]`;
           diff = p.minimo - tot;
-        } else {
-          qtyStr = String(p.cantidad);
+          return [
+            String(i + 1),
+            p.categoria || 'Sin categoria',
+            p.nombre,
+            qtyStr,
+            String(p.minimo),
+            String(diff)
+          ];
+        } else if (unidad === 'paquete' && p.piezasPorPaquete) {
+          qtyStr = `${p.cantidad} paq.`;
           diff = p.minimo - p.cantidad;
+          return [
+            String(i + 1),
+            p.categoria || 'Sin categoria',
+            p.nombre,
+            qtyStr,
+            `${p.minimo} paq.`,
+            `${diff} paq.`
+          ];
+        } else {
+          qtyStr = `${p.cantidad} ${unidad}`;
+          diff = p.minimo - p.cantidad;
+          return [
+            String(i + 1),
+            p.categoria || 'Sin categoria',
+            p.nombre,
+            qtyStr,
+            `${p.minimo} ${unidad}`,
+            `${diff} ${unidad}`
+          ];
         }
-        return [
-          String(i + 1),
-          p.categoria || 'Sin categoria',
-          p.nombre,
-          qtyStr,
-          String(p.minimo),
-          String(diff)
-        ];
       });
 
     doc.autoTable({
